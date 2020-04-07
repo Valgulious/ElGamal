@@ -37,16 +37,6 @@ class ElGamal:
 		print("Пользователь с id: " + str(_id) + " и именем: " + str(_name) + " создан!")
 		return True
 
-	def remove_user(self, _id):
-		for user in self.users:
-			if _id == user.id:
-				self.users.remove(user)
-				print("Плользователь с id: " + str(_id) + " удален!")
-				return True
-
-		print("Пользователя с id: " + str(_id) + " не существует!")
-		return False
-
 	def	send_massage(self, _message, _user_from, _user_to):
 		print("Сообщение, которое надо передать: " + str(_message))
 		encrypt_message = _user_from.encrypt(_message, _user_to.public_key)

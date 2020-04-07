@@ -15,44 +15,42 @@ def mulinv(b, n):
 class ElCur:
 
 	def __init__(self, _p, _A, _B, _G, _O):
-		if not ((4 * _A ** 3 + 27 * _B ** 2) % _p):
-			print("Невозможно создать эллиптическую кривую с заданными параметрами A и B")
-			return
+		assert ((4 * _A ** 3 + 27 * _B ** 2) % _p) != 0, "Невозможно создать эллиптическую кривую с заданными " \
+														 "параметрами A и B"
 
 		self.p = _p
 		self.A = _A
 		self.B = _B
 		self.O = _O
-		if self.point_belongs(_G[0], _G[1]):
-			self.G = _G
-			self.points = self.get_all_points()
+		assert self.point_belongs(_G), "Выбранная точка G не принадлежит заданной эллиптической кривой"
+		self.G = _G
+		self.points = self.get_all_points()
+
+	def add_points(self, _point1, _point2):
+		x1 = _point1[0]
+		x2 = _point2[0]
+		y1 = _point1[1]
+		y2 = _point2[1]
+		if (x1 == x2) and (y1 == (-y2) % self.p):
+			return _point1
+		elif (x1 == x2) and (y1 == y2):
+			lmbd = ((3 * x1 ** 2 + self.A) * mulinv((2 * y1), self.p)) % self.p
 		else:
-			print("Точка G не принадлежит заданной эллиптической кривой")
-			return
+			x = (-x1) % self.p
+			lmbd = ((y2 - y1) * mulinv((x2 + x), self.p)) % self.p
 
-
-	def add_points(self, _x1, _x2, _y1, _y2):
-		if (_x1 == _x2) and (_y1 == (-_y2) % self.p):
-			return _x1, _y2
-		elif (_x1 == _x2) and (_y1 == _y2):
-			lmbd = ((3 * _x1 ** 2 + self.A) * mulinv((2 * _y1), self.p)) % self.p
-		else:
-			x1 = (-_x1) % self.p
-			lmbd = ((_y2 - _y1) * mulinv((_x2 + x1), self.p)) % self.p
-
-		x3 = (lmbd * lmbd - _x1 - _x2) % self.p
-		y3 = (lmbd * (_x1 - x3) - _y1) % self.p
+		x3 = (lmbd * lmbd - x1 - x2) % self.p
+		y3 = (lmbd * (x1 - x3) - y1) % self.p
 		return x3, y3
 
 	def get_all_points(self):
 		flag = True
 		points = [self.G]
-		x1 = x2 = self.G[0]
-		y1 = y2 = self.G[1]
+		new_point = self.G
 		count = 1
 
 		while flag:
-			new_point = self.add_points(x1, x2, y1, y2)
+			new_point = self.add_points(self.G, new_point)
 
 			if new_point in points:
 				flag = False
@@ -60,8 +58,6 @@ class ElCur:
 				print(self.O)
 			else:
 				points.append(new_point)
-				x2 = new_point[0]
-				y2 = new_point[1]
 				print(new_point)
 
 			count += 1
@@ -71,26 +67,18 @@ class ElCur:
 		return points
 
 	def get_point(self, _n):
-		return self.points[_n - 1]
-		# return self.mul_point(_n, self.G)
+		return self.mul_point(_n, self.G)
 
 	def mul_point(self, _n, _point):
-		x1 = x2 = _point[0]
-		y1 = y2 = _point[1]
 		new_point = _point
 
 		for i in range(1, _n):
-			new_point = self.add_points(x1, x2, y1, y2)
-			x2 = new_point[0]
-			y2 = new_point[1]
+			new_point = self.add_points(_point, new_point)
 
 		return new_point
 
-	def point_belongs(self, _x, _y):
-		left = (_y ** 2) % self.p
-		right = (_x ** 3 + self.A * _x + self.B) % self.p
+	def point_belongs(self, _point):
+		left = (_point[1] ** 2) % self.p
+		right = (_point[0] ** 3 + self.A * _point[0] + self.B) % self.p
 
-		if left == right:
-			return True
-		else:
-			return False
+		return left == right
