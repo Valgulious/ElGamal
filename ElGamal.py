@@ -24,8 +24,8 @@ class User:
 
 
 class ElGamal:
-	def __init__(self, _p, _A, _B, _G, _O):
-		self.elcur = ElCur.ElCur(_p, _A, _B, _G, _O)
+	def __init__(self, _elcur):
+		self.elcur = _elcur
 		self.users = []
 
 	def add_user(self, _id, _name):
@@ -47,11 +47,15 @@ class ElGamal:
 
 
 p = 31991
-A = 31988
-B = 1000
+a1 = 0
+a2 = 0
+a3 = 0
+a4 = 31988
+a6 = 1000
 G = (0, 5585)
 O = (0, 0)
-elgamal = ElGamal(p, A, B, G, O)
+elcur = ElCur.ElCur(p, a1, a2, a3, a4, a6, G, O)
+elgamal = ElGamal(elcur)
 elgamal.add_user(0, "Alice")
 elgamal.add_user(1, "Bob")
 elgamal.send_massage(10000, elgamal.users[0], elgamal.users[1])

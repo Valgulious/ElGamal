@@ -14,13 +14,16 @@ def mulinv(b, n):
 
 class ElCur:
 
-	def __init__(self, _p, _A, _B, _G, _O):
-		assert ((4 * _A ** 3 + 27 * _B ** 2) % _p) != 0, "Невозможно создать эллиптическую кривую с заданными " \
+	def __init__(self, _p, _a1, _a2, _a3, _a4, _a6, _G, _O):
+		assert ((4 * _a4 ** 3 + 27 * _a6 ** 2) % _p) != 0, "Невозможно создать эллиптическую кривую с заданными " \
 														 "параметрами A и B"
 
 		self.p = _p
-		self.A = _A
-		self.B = _B
+		self.a1 = _a1
+		self.a2 = _a2
+		self.a3 = _a3
+		self.a4 = _a4
+		self.a6 = _a6
 		self.O = _O
 		assert self.point_belongs(_G), "Выбранная точка G не принадлежит заданной эллиптической кривой"
 		self.G = _G
@@ -31,16 +34,24 @@ class ElCur:
 		x2 = _point2[0]
 		y1 = _point1[1]
 		y2 = _point2[1]
-		if (x1 == x2) and (y1 == (-y2) % self.p):
+		p = self.p
+		a1 = self.a1
+		a2 = self.a2
+		a3 = self.a3
+		a4 = self.a4
+		a6 = self.a6
+		if (x1 == x2) and (y1 == (-y2) % p):
 			return _point1
 		elif (x1 == x2) and (y1 == y2):
-			lmbd = ((3 * x1 ** 2 + self.A) * mulinv((2 * y1), self.p)) % self.p
+			lmbd = ((3*x1**2 + 2*a2*x1 + a4 - a1*y1) * mulinv((2 *y1 + a1*x1 + a3), p)) % p
+			v = ((-x1**3 + a4*x1 + 2*a6 - a3*y1) * mulinv((2*y1 + a1*x1 + a3), p)) % p
 		else:
 			x = (-x1) % self.p
-			lmbd = ((y2 - y1) * mulinv((x2 + x), self.p)) % self.p
+			lmbd = ((y2 - y1) * mulinv((x2 + x), p)) % p
+			v = ((y1 * x2 - y2 * x1) * mulinv((x2 + x), p)) % p
 
-		x3 = (lmbd * lmbd - x1 - x2) % self.p
-		y3 = (lmbd * (x1 - x3) - y1) % self.p
+		x3 = (lmbd**2 + a1*lmbd - a2 - x1 - x2) % p
+		y3 = (-(lmbd + a1)*x3 - v - a3) % p
 		return x3, y3
 
 	def get_all_points(self):
@@ -78,7 +89,9 @@ class ElCur:
 		return new_point
 
 	def point_belongs(self, _point):
-		left = (_point[1] ** 2) % self.p
-		right = (_point[0] ** 3 + self.A * _point[0] + self.B) % self.p
+		x = _point[0]
+		y = _point[1]
+		left = (y ** 2 + self.a1 * x * y + self.a3 * y) % self.p
+		right = (x ** 3 + self.a2 * x ** 2 + self.a4 * x + self.a6) % self.p
 
 		return left == right
