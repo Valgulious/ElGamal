@@ -29,6 +29,7 @@ class ElCur:
 		self.G = _G
 		self.points = self.get_all_points()
 
+	# Сложение точек
 	def add_points(self, _point1, _point2):
 		x1 = _point1[0]
 		x2 = _point2[0]
@@ -54,6 +55,7 @@ class ElCur:
 		y3 = (-(lmbd + a1)*x3 - v - a3) % p
 		return x3, y3
 
+	# Генерация всех точек кривой
 	def get_all_points(self):
 		flag = True
 		points = [self.G]
@@ -77,9 +79,11 @@ class ElCur:
 
 		return points
 
+	# Получение _n-й точки кривой
 	def get_point(self, _n):
 		return self.mul_point(_n, self.G)
 
+	# Умножение точки _point саму на себя _n раз
 	def mul_point(self, _n, _point):
 		new_point = _point
 
@@ -88,6 +92,7 @@ class ElCur:
 
 		return new_point
 
+	# Проверка принадлежит ли точка _point кривой
 	def point_belongs(self, _point):
 		x = _point[0]
 		y = _point[1]
