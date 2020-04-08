@@ -15,8 +15,8 @@ def mulinv(b, n):
 class ElCur:
 
 	def __init__(self, _p, _a1, _a2, _a3, _a4, _a6, _G, _O):
-		assert ((4 * _a4 ** 3 + 27 * _a6 ** 2) % _p) != 0, "Невозможно создать эллиптическую кривую с заданными " \
-														 "параметрами A и B"
+		assert ((4 * _a4 ** 3 + 27 * _a6 ** 2) % _p) != 0, "Выберете другие параметры a4 и a6," \
+														   "так чтобы (4*a4^3 + 27*a6^2) mod p"
 
 		self.p = _p
 		self.a1 = _a1
@@ -27,7 +27,7 @@ class ElCur:
 		self.O = _O
 		assert self.point_belongs(_G), "Выбранная точка G не принадлежит заданной эллиптической кривой"
 		self.G = _G
-		self.points = self.get_all_points()
+		# self.points = self.get_all_points()
 
 	# Сложение точек
 	def add_points(self, _point1, _point2):
@@ -60,7 +60,6 @@ class ElCur:
 		flag = True
 		points = [self.G]
 		new_point = self.G
-		count = 1
 
 		while flag:
 			new_point = self.add_points(self.G, new_point)
@@ -68,14 +67,8 @@ class ElCur:
 			if new_point in points:
 				flag = False
 				points.append(self.O)
-				print(self.O)
 			else:
 				points.append(new_point)
-				print(new_point)
-
-			count += 1
-
-		print("Количство точек = " + str(count))
 
 		return points
 
