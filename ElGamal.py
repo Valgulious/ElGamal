@@ -1,50 +1,96 @@
 from random import randint
-import ElCur
+# import ElCur
 
 
-class User:
-	def __init__(self, _id, _name, _elcur, _q):
-		self.id = _id
-		self.name = _name
-		self.elcur = _elcur
-		self.q = _q
-		self._secret_key = randint(1, self.q - 1)
-		self.public_key = self.elcur.get_point(self._secret_key)
+def egcd(a, b):
+	if a == 0:
+		return b, 0, 1
+	else:
+		g, x, y = egcd(b % a, a)
+		return g, y - (b // a) * x, x
 
-	def encrypt(self, _message, _public_key):
-		k = randint(1, self.q - 1)
-		R = self.elcur.get_point(k)
-		P = self.elcur.mul_point(k, _public_key)
-		encrypt_message = (_message * P[0]) % self.elcur.p
-		return R, encrypt_message
 
-	def decrypt(self, _encrypt_message):
-		Q = self.elcur.mul_point(self._secret_key, _encrypt_message[0])
-		message = (_encrypt_message[1] * ElCur.mulinv(Q[0], self.elcur.p)) % self.elcur.p
-		return message
+def mulinv(b, n):
+	g, x, _ = egcd(b, n)
+	if g == 1:
+		return x % n
+
+
+class Eliptic:
+
+	def __init__(self, p, a1, a2, a3, a4, a6, g, o):
+		assert ((4 * a4 ** 3 + 27 * a6 ** 2) % p) != 0, "(4*a4^3 + 27*a6^2) mod p должно равняться 0"
+		self.p = p
+		self.a1 = a1
+		self.a2 = a2
+		self.a3 = a3
+		self.a4 = a4
+		self.a6 = a6
+		self.o = o
+		assert self.point_belongs(g), "Точка g не принадлежит эллиптической кривой"
+		self.g = g
+
+	def add_points(self, p1, p2):
+		x1 = p1[0]
+		x2 = p2[0]
+		y1 = p1[1]
+		y2 = p2[1]
+		if (x1 == x2) and (y1 == (-y2) % self.p):
+			return p1
+		elif (x1 == x2) and (y1 == y2):
+			la = ((3*x1**2+2*self.a2*x1+self.a4-self.a1*y1)*mulinv((2*y1+self.a1*x1+self.a3), self.p)) % self.p
+			nu = ((-x1**3+a4*x1+2*a6-a3*y1)*mulinv((2*y1+a1*x1+a3), p)) % p
+		else:
+			x = (-x1) % self.p
+			la = ((y2-y1)*mulinv((x2+x), self.p)) % self.p
+			nu = ((y1*x2-y2*x1)*mulinv((x2+x), self.p)) % self.p
+		x3 = (la**2+self.a1*la-self.a2-x1-x2) % self.p
+		y3 = (-(la+self.a1)*x3-nu-self.a3) % self.p
+		return x3, y3
+
+	def get_all_points(self):
+		f = True
+		new_p = self.g
+		points = [new_p]
+		while f:
+			new_p = self.add_points(self.g, new_p)
+			if new_p in points:
+				f = False
+				points.append(self.o)
+			else:
+				points.append(p)
+		return points
+
+	def get_point(self, n):
+		return self.mul_point(n, self.g)
+
+	def mul_point(self, n, p):
+		new_p = p
+		for i in range(1, n):
+			new_p = self.add_points(p, new_p)
+		return new_p
+
+	def point_belongs(self, p):
+		return (p[1]**2+self.a1*p[0]*p[1]+self.a3*p[1]) % self.p == (p[0]**3+self.a2*p[0]**2+self.a4*p[0]+self.a6) % self.p
 
 
 class ElGamal:
-	def __init__(self, _elcur, _q):
-		self.elcur = _elcur
-		self.q = _q
-		self.users = []
+	def __init__(self, eliptic, q):
+		self.eliptic = eliptic
+		self.q = q
 
-	def add_user(self, _id, _name):
-		for user in self.users:
-			assert _id != user.id, "Пользователь с id: " + str(_id) + " уже существует!"
-		user = User(_id, _name, self.elcur, self.q)
-		self.users.append(user)
-		print("Пользователь с id: " + str(_id) + " и именем: " + str(_name) + " создан!")
-		return user
+	def encrypt(self, message, public):
+		# k = randint(1, self.q - 1)
+		k = 523
+		r = self.eliptic.get_point(k)
+		p = self.eliptic.mul_point(k, public)
+		encrypt_message = (message*p[0]) % self.eliptic.p
+		return r, encrypt_message
 
-	def	send_massage(self, _message, _user_from, _user_to):
-		print("Сообщение, которое надо передать: " + str(_message))
-		encrypt_message = _user_from.encrypt(_message, _user_to.public_key)
-		print("Зашифрованное сообщение: " + str(encrypt_message))
-		print("Пользователь " + _user_from.name + " посылает сообщение пользователю " + _user_to.name)
-		decrypt_message = _user_to.decrypt(encrypt_message)
-		print("Расшифрованное сообщение: " + str(decrypt_message))
+	def decrypt(self, encrypt, secret):
+		q = self.eliptic.mul_point(secret, encrypt[0])
+		message = (encrypt[1]*mulinv(q[0], self.eliptic.p)) % self.eliptic.p
+		return message
 
 
 p = 31991
@@ -53,19 +99,17 @@ a2 = 0
 a3 = 0
 a4 = 31988
 a6 = 1000
-G = (0, 5585)
-O = (0, 0)
-# q = 32089
+g = (0, 5585)
+o = (0, 0)
 
-elcur = ElCur.ElCur(p, a1, a2, a3, a4, a6, G, O)
-points = elcur.get_all_points()
+eliptic = Eliptic(p, a1, a2, a3, a4, a6, g, o)
+points = eliptic.get_all_points()
 q = len(points)
-
 for point in points:
 	print(point)
 print("Количество точек = " + str(q))
-
-elgamal = ElGamal(elcur, q)
-alice = elgamal.add_user(0, "Alice")
-bob = elgamal.add_user(1, "Bob")
-elgamal.send_massage(10000, alice, bob)
+elgamal = ElGamal(eliptic, q)
+c = 5103
+D = (12507, 2027)
+print(elgamal.encrypt(10000, D))
+print(elgamal.decrypt(elgamal.encrypt(10000, D), c))
